@@ -46,7 +46,6 @@ Thumbs.db
 
 # Data files
 *.csv
-*.json
 
 # Temporary files
 *.tmp

@@ -1,0 +1,682 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Email Classification API",
+    "description": "API phân loại email sử dụng rule-based và TF-IDF + Logistic Regression. Phân loại email thành 4 loại: An toàn, Nghi ngờ, Spam, Giả mạo. Chỉ sử dụng 3 yếu tố: title, content, from_email.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Email Classification Team"
+    }
+  },
+  "host": "localhost:5001",
+  "basePath": "/",
+  "schemes": [
+    "http"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "tags": [
+    {
+      "name": "System",
+      "description": "System endpoints"
+    },
+    {
+      "name": "Email Classification",
+      "description": "Email classification endpoints"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "tags": ["System"],
+        "summary": "Trang chủ API",
+        "description": "Hiển thị thông tin cơ bản về API và các endpoints có sẵn",
+        "responses": {
+          "200": {
+            "description": "Thông tin API",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Email Classification API"
+                },
+                "version": {
+                  "type": "string",
+                  "example": "1.0.0"
+                },
+                "classifiers": {
+                  "type": "object",
+                  "properties": {
+                    "rule_based": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "ml_classifier": {
+                      "type": "boolean",
+                      "example": true
+                    }
+                  }
+                },
+                "endpoints": {
+                  "type": "object",
+                  "properties": {
+                    "health": {
+                      "type": "string",
+                      "example": "/health"
+                    },
+                    "swagger": {
+                      "type": "string",
+                      "example": "/swagger"
+                    },
+                    "predict_rule": {
+                      "type": "string",
+                      "example": "/predict/rule"
+                    },
+                    "predict_ml": {
+                      "type": "string",
+                      "example": "/predict/ml"
+                    },
+                    "predict_batch": {
+                      "type": "string",
+                      "example": "/predict/batch"
+                    },
+                    "model_info": {
+                      "type": "string",
+                      "example": "/model_info"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": ["System"],
+        "summary": "Kiểm tra trạng thái API",
+        "description": "Kiểm tra xem API có hoạt động bình thường không và trạng thái của các classifiers",
+        "responses": {
+          "200": {
+            "description": "Trạng thái API",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "healthy"
+                },
+                "timestamp": {
+                  "type": "string",
+                  "format": "date-time",
+                  "example": "2024-01-15T10:30:00"
+                },
+                "classifiers": {
+                  "type": "object",
+                  "properties": {
+                    "rule_based": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "ml_classifier": {
+                      "type": "boolean",
+                      "example": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/model_info": {
+      "get": {
+        "tags": ["System"],
+        "summary": "Thông tin về models",
+        "description": "Lấy thông tin chi tiết về các models phân loại email",
+        "responses": {
+          "200": {
+            "description": "Thông tin models",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "models": {
+                  "type": "object",
+                  "properties": {
+                    "rule_based": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "example": "Rule-based Email Classifier"
+                        },
+                        "version": {
+                          "type": "string",
+                          "example": "1.0.0"
+                        },
+                        "algorithm": {
+                          "type": "string",
+                          "example": "Pattern-based classification with regex"
+                        },
+                        "loaded": {
+                          "type": "boolean",
+                          "example": true
+                        }
+                      }
+                    },
+                    "ml_classifier": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "example": "TF-IDF + Logistic Regression"
+                        },
+                        "version": {
+                          "type": "string",
+                          "example": "1.0.0"
+                        },
+                        "algorithm": {
+                          "type": "string",
+                          "example": "TF-IDF vectorization + Logistic Regression"
+                        },
+                        "accuracy": {
+                          "type": "string",
+                          "example": "99.92%"
+                        },
+                        "training_time": {
+                          "type": "string",
+                          "example": "3.62 seconds"
+                        },
+                        "loaded": {
+                          "type": "boolean",
+                          "example": true
+                        }
+                      }
+                    }
+                  }
+                },
+                "categories": {
+                  "type": "object",
+                  "properties": {
+                    "0": {
+                      "type": "string",
+                      "example": "An toàn"
+                    },
+                    "1": {
+                      "type": "string",
+                      "example": "Nghi ngờ"
+                    },
+                    "2": {
+                      "type": "string",
+                      "example": "Spam"
+                    },
+                    "3": {
+                      "type": "string",
+                      "example": "Giả mạo"
+                    }
+                  }
+                },
+                "features": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "example": ["title", "content", "from_email"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/predict/rule": {
+      "post": {
+        "tags": ["Email Classification"],
+        "summary": "Phân loại email sử dụng rule-based approach",
+        "description": "Phân loại email sử dụng pattern matching và regex rules thành 4 loại: An toàn, Nghi ngờ, Spam, Giả mạo",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "email_data",
+            "description": "Thông tin email cần phân loại",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["title", "content", "from_email"],
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "description": "Tiêu đề email",
+                  "example": "Thông báo khẩn từ ngân hàng"
+                },
+                "content": {
+                  "type": "string",
+                  "description": "Nội dung email",
+                  "example": "Tài khoản của bạn sẽ bị khóa trong 24h nếu không xác minh ngay"
+                },
+                "from_email": {
+                  "type": "string",
+                  "description": "Email người gửi",
+                  "example": "security@bank-verify.tk"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Kết quả phân loại thành công",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean",
+                  "example": true
+                },
+                "method": {
+                  "type": "string",
+                  "example": "rule_based"
+                },
+                "category": {
+                  "type": "string",
+                  "description": "Loại email (An toàn, Nghi ngờ, Spam, Giả mạo)",
+                  "example": "Giả mạo"
+                },
+                "confidence": {
+                  "type": "number",
+                  "description": "Độ tin cậy (0-1)",
+                  "example": 0.85
+                },
+                "indicators": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Các dấu hiệu nhận biết",
+                  "example": ["Domain đáng ngờ: bank-verify.tk", "Tiêu đề có dấu hiệu phishing"]
+                },
+                "level": {
+                  "type": "string",
+                  "description": "Mức độ phân tích (basic/advanced)",
+                  "example": "basic"
+                },
+                "processing_time": {
+                  "type": "number",
+                  "description": "Thời gian xử lý (ms)",
+                  "example": 12.5
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu đầu vào không hợp lệ",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "error": {
+                  "type": "string",
+                  "example": "Missing required field: title"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi server",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "error": {
+                  "type": "string",
+                  "example": "Rule-based classifier not loaded"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/predict/ml": {
+      "post": {
+        "tags": ["Email Classification"],
+        "summary": "Phân loại email sử dụng ML model",
+        "description": "Phân loại email sử dụng TF-IDF + Logistic Regression model thành 4 loại: An toàn, Nghi ngờ, Spam, Giả mạo. Chỉ sử dụng 3 yếu tố: title, content, from_email.",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "email_data",
+            "description": "Thông tin email cần phân loại (chỉ sử dụng 3 yếu tố)",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["title", "content", "from_email"],
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "description": "Tiêu đề email (required)",
+                  "example": "Thông báo khẩn từ ngân hàng"
+                },
+                "content": {
+                  "type": "string",
+                  "description": "Nội dung email (required)",
+                  "example": "Tài khoản của bạn sẽ bị khóa trong 24h nếu không xác minh ngay"
+                },
+                "from_email": {
+                  "type": "string",
+                  "description": "Email người gửi (required)",
+                  "example": "security@bank-verify.tk"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Kết quả phân loại thành công",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean",
+                  "example": true
+                },
+                "method": {
+                  "type": "string",
+                  "example": "ml_classifier"
+                },
+                "category": {
+                  "type": "string",
+                  "description": "Loại email (An toàn, Nghi ngờ, Spam, Giả mạo)",
+                  "example": "Giả mạo"
+                },
+                "confidence": {
+                  "type": "number",
+                  "description": "Độ tin cậy (0-1)",
+                  "example": 0.489
+                },
+                "probabilities": {
+                  "type": "object",
+                  "description": "Xác suất cho từng loại",
+                  "properties": {
+                    "An toàn": {
+                      "type": "number",
+                      "example": 0.105
+                    },
+                    "Nghi ngờ": {
+                      "type": "number",
+                      "example": 0.237
+                    },
+                    "Spam": {
+                      "type": "number",
+                      "example": 0.169
+                    },
+                    "Giả mạo": {
+                      "type": "number",
+                      "example": 0.489
+                    }
+                  }
+                },
+                "processing_time": {
+                  "type": "number",
+                  "description": "Thời gian xử lý (ms)",
+                  "example": 20.81
+                },
+                "text_length": {
+                  "type": "number",
+                  "description": "Độ dài text đã xử lý",
+                  "example": 126
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu đầu vào không hợp lệ",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "error": {
+                  "type": "string",
+                  "example": "Missing required field: title"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi server",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "error": {
+                  "type": "string",
+                  "example": "ML classifier not loaded"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/predict/batch": {
+      "post": {
+        "tags": ["Email Classification"],
+        "summary": "Phân loại nhiều email cùng lúc",
+        "description": "Phân loại nhiều email cùng lúc sử dụng rule-based hoặc ML approach",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "batch_data",
+            "description": "Danh sách email cần phân loại",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["emails"],
+              "properties": {
+                "method": {
+                  "type": "string",
+                  "description": "Phương pháp phân loại (rule/ml)",
+                  "enum": ["rule", "ml"],
+                  "default": "rule",
+                  "example": "ml"
+                },
+                "emails": {
+                  "type": "array",
+                  "description": "Danh sách email (chỉ sử dụng 3 yếu tố: title, content, from_email)",
+                  "items": {
+                    "type": "object",
+                    "required": ["title", "content", "from_email"],
+                    "properties": {
+                      "title": {
+                        "type": "string",
+                        "description": "Tiêu đề email (required)",
+                        "example": "Thông báo khẩn từ ngân hàng"
+                      },
+                      "content": {
+                        "type": "string",
+                        "description": "Nội dung email (required)",
+                        "example": "Tài khoản của bạn sẽ bị khóa trong 24h nếu không xác minh ngay"
+                      },
+                      "from_email": {
+                        "type": "string",
+                        "description": "Email người gửi (required)",
+                        "example": "security@bank-verify.tk"
+                      }
+                    }
+                  },
+                  "example": [
+                    {
+                      "title": "Thông báo khẩn từ ngân hàng",
+                      "content": "Tài khoản của bạn sẽ bị khóa trong 24h nếu không xác minh ngay.",
+                      "from_email": "security@bank-verify.tk"
+                    },
+                    {
+                      "title": "Xác nhận đơn hàng",
+                      "content": "Cảm ơn bạn đã đặt hàng. Đơn hàng của bạn đã được xác nhận.",
+                      "from_email": "orders@shopee.vn"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Kết quả phân loại batch thành công",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean",
+                  "example": true
+                },
+                "method": {
+                  "type": "string",
+                  "example": "ml"
+                },
+                "results": {
+                  "type": "array",
+                  "description": "Kết quả phân loại cho từng email",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "category": {
+                        "type": "string",
+                        "description": "Loại email",
+                        "example": "Giả mạo"
+                      },
+                      "confidence": {
+                        "type": "number",
+                        "description": "Độ tin cậy",
+                        "example": 0.476
+                      },
+                      "indicators": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "Các dấu hiệu nhận biết (chỉ có trong rule-based)"
+                      },
+                      "level": {
+                        "type": "string",
+                        "description": "Mức độ phân tích (chỉ có trong rule-based)"
+                      },
+                      "probabilities": {
+                        "type": "object",
+                        "description": "Xác suất cho từng loại (chỉ có trong ML)"
+                      }
+                    }
+                  }
+                },
+                "total_processed": {
+                  "type": "integer",
+                  "description": "Tổng số email đã xử lý",
+                  "example": 2
+                },
+                "processing_time": {
+                  "type": "number",
+                  "description": "Thời gian xử lý tổng (ms)",
+                  "example": 3.57
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu đầu vào không hợp lệ",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "error": {
+                  "type": "string",
+                  "example": "No emails array provided"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi server",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "error": {
+                  "type": "string",
+                  "example": "No classifiers loaded"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "EmailData": {
+      "type": "object",
+      "required": ["title", "content", "from_email"],
+      "description": "Email data with only 3 required fields",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Tiêu đề email (required)"
+        },
+        "content": {
+          "type": "string",
+          "description": "Nội dung email (required)"
+        },
+        "from_email": {
+          "type": "string",
+          "description": "Email người gửi (required)"
+        }
+      }
+    },
+    "ClassificationResult": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "category": {
+          "type": "string",
+          "description": "Loại email (An toàn, Nghi ngờ, Spam, Giả mạo)"
+        },
+        "confidence": {
+          "type": "number",
+          "description": "Độ tin cậy (0-1)"
+        },
+        "processing_time": {
+          "type": "number",
+          "description": "Thời gian xử lý (ms)"
+        }
+      }
+    }
+  }
+} 
