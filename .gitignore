@@ -41,7 +41,6 @@ Thumbs.db
 
 # Model files (large binary files)
 *.bin
-*.pkl
 *.h5
 *.model
 
