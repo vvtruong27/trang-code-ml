@@ -27,6 +27,7 @@ echo "🎯 Start the API server:"
 source .venv/bin/activate
 cd email_classification_module
 python api_backend.py
+
 echo ""
 echo "🌐 API will be available at: http://localhost:5001"
 echo "📚 Swagger UI: http://localhost:5001/swagger" 
